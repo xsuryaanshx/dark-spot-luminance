@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>Dark Spot Luminance</title>
+  <style>
+    @font-face {
+      font-family: 'DrukWideBold';
+      src: url('https://liketekvzrazheolmfnj.supabase.co/storage/v1/object/public/Fonts/DrukWideBold.ttf') format('truetype');
+      font-weight: bold;
+      font-style: normal;
+      font-display: swap;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #000; color: #fff; overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      touch-action: none;
+    }
+    video { display: none; }
+    #watermark {
+      position: fixed; bottom: 32px; left: 0; right: 0;
+      text-align: center; z-index: 20; pointer-events: none;
+      font-family: 'DrukWideBold', sans-serif;
+      font-size: 14px; letter-spacing: 0.15em;
+      color: rgba(255,255,255,0.55);
+      text-transform: uppercase;
+      text-shadow: 0 0 20px rgba(139,92,246,0.3);
+      transition: bottom 0.4s ease;
+    }
+
+    /* Start Screen */
+    #start-screen {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; min-height: 100dvh; gap: 20px;
+      padding: 32px; text-align: center;
+    }
+    #start-screen.hidden { display: none; }
+    .logo {
+      width: 80px; height: 80px; border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #a78bfa, #7c3aed, #4c1d95);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 60px rgba(167,139,250,0.4);
+      animation: pulse 2.5s ease-in-out infinite;
+    }
+    h1 {
+      font-size: 28px; font-weight: 700; letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #c4b5fd, #a78bfa, #8b5cf6);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .desc { color: #a1a1aa; font-size: 14px; line-height: 1.7; max-width: 300; }
+    .start-btn {
+      padding: 15px 44px; border-radius: 50px; border: none;
+      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+      color: #fff; font-size: 17px; font-weight: 600; cursor: pointer;
+      box-shadow: 0 4px 30px rgba(139,92,246,0.4); margin-top: 8px;
+    }
+    .hint { color: #52525b; font-size: 11px; margin-top: 4px; }
+
+    /* Camera View */
+    #camera-view { display: none; position: relative; width: 100%; height: 100dvh; }
+    #camera-view.active { display: block; }
+    #main-canvas { width: 100%; height: 100%; object-fit: cover; }
+    #particle-canvas {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none;
+    }
+
+    /* Controls */
+    .controls {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 10;
+      padding: 16px 20px 30px;
+      background: linear-gradient(to top, rgba(0,0,0,0.92), rgba(0,0,0,0.6), transparent);
+      display: flex; flex-direction: column; gap: 12px; align-items: center;
+    }
+    .btn-row { display: flex; gap: 10px; }
+    .toggle-btn {
+      padding: 8px 16px; border-radius: 20px; font-size: 12px;
+      font-weight: 600; cursor: pointer; transition: all 0.2s; border: 1.5px solid #333;
+      background: rgba(255,255,255,0.04); color: #555;
+    }
+    .toggle-btn.active-violet { border-color: #8b5cf6; background: rgba(139,92,246,0.18); color: #c4b5fd; }
+    .toggle-btn.active-gold { border-color: #f59e0b; background: rgba(245,158,11,0.18); color: #fcd34d; }
+    .slider-row {
+      display: flex; align-items: center; gap: 12px; width: 100%; max-width: 380px;
+    }
+    .slider-label { font-size: 11px; color: #71717a; min-width: 55px; }
+    .slider-val { font-size: 11px; color: #a1a1aa; min-width: 34px; text-align: right; }
+    input[type="range"] {
+      flex: 1; height: 4px; -webkit-appearance: none; appearance: none;
+      background: #333; border-radius: 2px; outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%;
+      background: #8b5cf6; border: 2px solid #c4b5fd; cursor: pointer;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.06); opacity: 0.85; }
+    }
+  </style>
+</head>
+<body>
+  <video id="video" playsinline muted></video>
+
+  <div id="watermark">YuviStark</div>
+
+  <div id="start-screen">
+    <div class="logo">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+      </svg>
+    </div>
+    <h1>Dark Spot Luminance</h1>
+    <p class="desc">Inverts dark areas into glowing light sources with twinkling sparkle particles — real-time rear camera effect.</p>
+    <button class="start-btn" onclick="startCamera()">Start Camera</button>
+    <p class="hint">Uses rear camera · Works best on mobile</p>
+  </div>
+
+  <div id="camera-view">
+    <canvas id="main-canvas"></canvas>
+    <canvas id="particle-canvas"></canvas>
+    <div class="controls">
+      <div class="btn-row">
+        <button id="btn-invert" class="toggle-btn active-violet" onclick="toggleInvert()">⚡ Invert</button>
+        <button id="btn-sparkle" class="toggle-btn active-gold" onclick="toggleSparkles()">✨ Sparkles</button>
+      </div>
+      <div class="slider-row">
+        <span class="slider-label">Intensity</span>
+        <input type="range" id="intensity" min="0.1" max="1" step="0.05" value="0.75" oninput="updateIntensity(this.value)" />
+        <span class="slider-val" id="intensity-val">75%</span>
+      </div>
+      <div class="slider-row">
+        <span class="slider-label">Threshold</span>
+        <input type="range" id="threshold" min="20" max="120" step="5" value="60" oninput="updateThreshold(this.value)" />
+        <span class="slider-val" id="threshold-val">60</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const video = document.getElementById('video');
+    const mainCanvas = document.getElementById('main-canvas');
+    const particleCanvas = document.getElementById('particle-canvas');
+    const ctx = mainCanvas.getContext('2d', { willReadFrequently: true });
+    const pCtx = particleCanvas.getContext('2d');
+
+    const MAX_PARTICLES = 150;
+    const SAMPLE_GRID = 10;
+
+    let showInvert = true;
+    let showParticles = true;
+    let intensity = 0.75;
+    let threshold = 60;
+    let particles = [];
+    let running = false;
+
+    function toggleInvert() {
+      showInvert = !showInvert;
+      const btn = document.getElementById('btn-invert');
+      btn.className = showInvert ? 'toggle-btn active-violet' : 'toggle-btn';
+    }
+
+    function toggleSparkles() {
+      showParticles = !showParticles;
+      const btn = document.getElementById('btn-sparkle');
+      btn.className = showParticles ? 'toggle-btn active-gold' : 'toggle-btn';
+    }
+
+    function updateIntensity(v) {
+      intensity = parseFloat(v);
+      document.getElementById('intensity-val').textContent = Math.round(intensity * 100) + '%';
+    }
+
+    function updateThreshold(v) {
+      threshold = parseInt(v);
+      document.getElementById('threshold-val').textContent = threshold;
+    }
+
+    function createParticle(x, y, r, g, b) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 0.5 + Math.random() * 2.8;
+      const hue = r > g && r > b ? 330 : g > b ? 160 : 240;
+      return {
+        x, y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 1.4,
+        life: 1.0,
+        decay: 0.006 + Math.random() * 0.016,
+        size: 1.5 + Math.random() * 4.5,
+        color: `hsl(${hue + Math.random() * 60 - 30}, 100%, ${68 + Math.random() * 28}%)`,
+        glow: 0.4 + Math.random() * 0.6,
+        twinkle: Math.random() * Math.PI * 2,
+        twinkleSpeed: 0.05 + Math.random() * 0.15,
+      };
+    }
+
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false,
+        });
+        video.srcObject = stream;
+        await video.play();
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('camera-view').classList.add('active');
+        document.getElementById('watermark').style.bottom = '140px';
+        running = true;
+        loop();
+      } catch (e) {
+        alert('Camera access denied. Please allow permissions and reload.');
+      }
+    }
+
+    function loop() {
+      if (!running) return;
+
+      const w = video.videoWidth || 360;
+      const h = video.videoHeight || 640;
+      if (mainCanvas.width !== w) mainCanvas.width = w;
+      if (mainCanvas.height !== h) mainCanvas.height = h;
+      if (particleCanvas.width !== w) particleCanvas.width = w;
+      if (particleCanvas.height !== h) particleCanvas.height = h;
+
+      ctx.drawImage(video, 0, 0, w, h);
+      const imageData = ctx.getImageData(0, 0, w, h);
+      const data = imageData.data;
+      const darkSpots = [];
+
+      for (let y = 0; y < h; y += SAMPLE_GRID) {
+        for (let x = 0; x < w; x += SAMPLE_GRID) {
+          const i = (y * w + x) * 4;
+          const lum = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+          if (lum < threshold) {
+            darkSpots.push({ x, y, luminance: lum, r: 255 - data[i], g: 255 - data[i + 1], b: 255 - data[i + 2] });
+          }
+        }
+      }
+
+      if (showInvert) {
+        const br = 40;
+        for (let i = 0; i < data.length; i += 4) {
+          const lum = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+          let t = 0;
+          if (lum < threshold) t = intensity;
+          else if (lum < threshold + br) t = ((threshold + br - lum) / br) * intensity;
+          if (t > 0) {
+            data[i] = Math.round(data[i] + (255 - data[i]) * t);
+            data[i + 1] = Math.round(data[i + 1] + (255 - data[i + 1]) * t);
+            data[i + 2] = Math.round(data[i + 2] + (255 - data[i + 2]) * t);
+          }
+        }
+        ctx.putImageData(imageData, 0, 0);
+
+        for (const spot of darkSpots) {
+          const gs = 22 + (1 - spot.luminance / threshold) * 35;
+          const a = 0.18 * intensity;
+          const grad = ctx.createRadialGradient(spot.x, spot.y, 0, spot.x, spot.y, gs);
+          grad.addColorStop(0, `rgba(${spot.r},${spot.g},${spot.b},${a})`);
+          grad.addColorStop(0.4, `rgba(${spot.r},${spot.g},${spot.b},${a * 0.35})`);
+          grad.addColorStop(1, `rgba(${spot.r},${spot.g},${spot.b},0)`);
+          ctx.fillStyle = grad;
+          ctx.fillRect(spot.x - gs, spot.y - gs, gs * 2, gs * 2);
+        }
+      }
+
+      if (showParticles && darkSpots.length > 0) {
+        const sc = Math.min(Math.floor(4 * intensity), 6);
+        for (let s = 0; s < sc; s++) {
+          if (particles.length < MAX_PARTICLES) {
+            const sp = darkSpots[Math.floor(Math.random() * darkSpots.length)];
+            particles.push(createParticle(
+              sp.x + (Math.random() - 0.5) * SAMPLE_GRID * 2,
+              sp.y + (Math.random() - 0.5) * SAMPLE_GRID * 2,
+              sp.r, sp.g, sp.b
+            ));
+          }
+        }
+      }
+
+      pCtx.clearRect(0, 0, w, h);
+      const alive = [];
+      for (const p of particles) {
+        p.x += p.vx; p.y += p.vy; p.vy -= 0.015;
+        p.life -= p.decay; p.twinkle += p.twinkleSpeed;
+        if (p.life <= 0) continue;
+        alive.push(p);
+
+        const tw = 0.5 + 0.5 * Math.sin(p.twinkle);
+        const al = p.life * p.glow * tw;
+        const sz = p.size * (0.5 + 0.5 * p.life);
+
+        pCtx.save();
+        pCtx.globalAlpha = al * 0.25;
+        pCtx.shadowColor = p.color; pCtx.shadowBlur = sz * 5;
+        pCtx.fillStyle = p.color;
+        pCtx.beginPath(); pCtx.arc(p.x, p.y, sz * 1.8, 0, Math.PI * 2); pCtx.fill();
+        pCtx.restore();
+
+        pCtx.save();
+        pCtx.globalAlpha = al;
+        pCtx.fillStyle = '#fff'; pCtx.shadowColor = p.color; pCtx.shadowBlur = sz * 2.5;
+        pCtx.beginPath(); pCtx.arc(p.x, p.y, sz * 0.5, 0, Math.PI * 2); pCtx.fill();
+
+        pCtx.strokeStyle = p.color; pCtx.lineWidth = 0.6;
+        pCtx.globalAlpha = al * 0.55;
+        const arm = sz * 2.2 * tw;
+        pCtx.beginPath();
+        pCtx.moveTo(p.x - arm, p.y); pCtx.lineTo(p.x + arm, p.y);
+        pCtx.moveTo(p.x, p.y - arm); pCtx.lineTo(p.x, p.y + arm);
+        pCtx.stroke();
+
+        pCtx.globalAlpha = al * 0.25;
+        const da = arm * 0.6;
+        pCtx.beginPath();
+        pCtx.moveTo(p.x - da, p.y - da); pCtx.lineTo(p.x + da, p.y + da);
+        pCtx.moveTo(p.x + da, p.y - da); pCtx.lineTo(p.x - da, p.y + da);
+        pCtx.stroke();
+        pCtx.restore();
+      }
+      particles = alive;
+
+      requestAnimationFrame(loop);
+    }
+  </script>
+</body>
+</html>

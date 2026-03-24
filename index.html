@@ -1,21 +1,281 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="theme-color" content="#000000" />
-    <meta name="description" content="Real-time camera effect — inverts dark areas into glowing light sources with sparkle particle emission" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <title>Dark Spot Luminance</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>" />
-    <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { background: #000; overflow: hidden; }
-    </style>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="description" content="Real-time camera effect — inverts your scene into a vivid photographic negative with deep contrast and rich colour." />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Dark Spot Luminance</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>" />
+  <style>
+    @font-face {
+      font-family: 'DrukWideBold';
+      src: url('https://liketekvzrazheolmfnj.supabase.co/storage/v1/object/public/Fonts/DrukWideBold.ttf') format('truetype');
+      font-weight: bold;
+      font-style: normal;
+      font-display: swap;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #000; color: #fff; overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      touch-action: none;
+    }
+    video { display: none; }
+    #watermark {
+      position: fixed; bottom: 32px; left: 0; right: 0;
+      text-align: center; z-index: 20; pointer-events: none;
+      font-family: 'DrukWideBold', sans-serif;
+      font-size: 14px; letter-spacing: 0.15em;
+      color: rgba(255,255,255,0.55);
+      text-transform: uppercase;
+      text-shadow: 0 0 20px rgba(139,92,246,0.3);
+      transition: bottom 0.4s ease;
+    }
+
+    /* Start Screen */
+    #start-screen {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; min-height: 100dvh; gap: 20px;
+      padding: 32px; text-align: center;
+    }
+    #start-screen.hidden { display: none; }
+    .logo {
+      width: 80px; height: 80px; border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #a78bfa, #7c3aed, #4c1d95);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 60px rgba(167,139,250,0.4);
+      animation: pulse 2.5s ease-in-out infinite;
+    }
+    h1 {
+      font-size: 28px; font-weight: 700; letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #c4b5fd, #a78bfa, #8b5cf6);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .desc { color: #a1a1aa; font-size: 14px; line-height: 1.7; max-width: 300px; }
+    .start-btn {
+      padding: 15px 44px; border-radius: 50px; border: none;
+      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+      color: #fff; font-size: 17px; font-weight: 600; cursor: pointer;
+      box-shadow: 0 4px 30px rgba(139,92,246,0.4); margin-top: 8px;
+    }
+    .hint { color: #52525b; font-size: 11px; margin-top: 4px; }
+
+    /* Camera View */
+    #camera-view { display: none; position: relative; width: 100%; height: 100dvh; }
+    #camera-view.active { display: block; }
+    #main-canvas { width: 100%; height: 100%; object-fit: cover; }
+
+    /* Controls */
+    .controls {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 10;
+      padding: 16px 20px 30px;
+      background: linear-gradient(to top, rgba(0,0,0,0.92), rgba(0,0,0,0.6), transparent);
+      display: flex; flex-direction: column; gap: 12px; align-items: center;
+    }
+    .btn-row { display: flex; gap: 10px; }
+    .toggle-btn {
+      padding: 8px 16px; border-radius: 20px; font-size: 12px;
+      font-weight: 600; cursor: pointer; transition: all 0.2s; border: 1.5px solid #333;
+      background: rgba(255,255,255,0.04); color: #555;
+    }
+    .toggle-btn.active-violet { border-color: #8b5cf6; background: rgba(139,92,246,0.18); color: #c4b5fd; }
+    .slider-row {
+      display: flex; align-items: center; gap: 12px; width: 100%; max-width: 380px;
+    }
+    .slider-label { font-size: 11px; color: #71717a; min-width: 55px; }
+    .slider-val { font-size: 11px; color: #a1a1aa; min-width: 34px; text-align: right; }
+    input[type="range"] {
+      flex: 1; height: 4px; -webkit-appearance: none; appearance: none;
+      background: #333; border-radius: 2px; outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%;
+      background: #8b5cf6; border: 2px solid #c4b5fd; cursor: pointer;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.06); opacity: 0.85; }
+    }
+  </style>
+</head>
+<body>
+  <video id="video" playsinline muted></video>
+
+  <div id="watermark">YuviStark</div>
+
+  <div id="start-screen">
+    <div class="logo">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+      </svg>
+    </div>
+    <h1>Dark Spot Luminance</h1>
+    <p class="desc">Inverts your scene into a vivid photographic negative — real-time rear camera effect.</p>
+    <button class="start-btn" onclick="startCamera()">Start Camera</button>
+    <p class="hint">Uses rear camera · Works best on mobile</p>
+  </div>
+
+  <div id="camera-view">
+    <canvas id="main-canvas"></canvas>
+    <div class="controls">
+      <div class="btn-row">
+        <button id="btn-invert" class="toggle-btn active-violet" onclick="toggleInvert()">⚡ Invert</button>
+      </div>
+      <div class="slider-row">
+        <span class="slider-label">Intensity</span>
+        <input type="range" id="intensity" min="0" max="100" step="1" value="100" oninput="updateIntensity(this.value)" />
+        <span class="slider-val" id="intensity-val">100%</span>
+      </div>
+      <div class="slider-row">
+        <span class="slider-label">Threshold</span>
+        <input type="range" id="threshold" min="0" max="100" step="1" value="0" oninput="updateThreshold(this.value)" />
+        <span class="slider-val" id="threshold-val">0</span>
+      </div>
+      <div class="slider-row">
+        <span class="slider-label">Contrast</span>
+        <input type="range" id="contrast" min="80" max="200" step="1" value="200" oninput="updateContrast(this.value)" />
+        <span class="slider-val" id="contrast-val">200%</span>
+      </div>
+      <div class="slider-row">
+        <span class="slider-label">Saturation</span>
+        <input type="range" id="saturation" min="0" max="300" step="1" value="180" oninput="updateSaturation(this.value)" />
+        <span class="slider-val" id="saturation-val">180%</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const video = document.getElementById('video');
+    const mainCanvas = document.getElementById('main-canvas');
+    const ctx = mainCanvas.getContext('2d', { willReadFrequently: true });
+
+    let showInvert = true;
+    let intensity  = 1.00;
+    let threshold  = 0;
+    let contrast   = 2.00;
+    let saturation = 1.80;
+    let running    = false;
+
+    function toggleInvert() {
+      showInvert = !showInvert;
+      document.getElementById('btn-invert').className =
+        showInvert ? 'toggle-btn active-violet' : 'toggle-btn';
+    }
+    function updateIntensity(v) {
+      intensity = parseInt(v) / 100;
+      document.getElementById('intensity-val').textContent = v + '%';
+    }
+    function updateThreshold(v) {
+      threshold = parseInt(v);
+      document.getElementById('threshold-val').textContent = v;
+    }
+    function updateContrast(v) {
+      contrast = parseInt(v) / 100;
+      document.getElementById('contrast-val').textContent = v + '%';
+    }
+    function updateSaturation(v) {
+      saturation = parseInt(v) / 100;
+      document.getElementById('saturation-val').textContent = v + '%';
+    }
+
+    function applyContrast(v, c) {
+      return Math.max(0, Math.min(255, ((v / 255 - 0.5) * c + 0.5) * 255));
+    }
+    function rgbToHsl(r, g, b) {
+      r /= 255; g /= 255; b /= 255;
+      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      let h, s, l = (max + min) / 2;
+      if (max === min) { h = s = 0; }
+      else {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+          case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+          case g: h = ((b - r) / d + 2) / 6; break;
+          case b: h = ((r - g) / d + 4) / 6; break;
+        }
+      }
+      return [h, s, l];
+    }
+    function hslToRgb(h, s, l) {
+      if (s === 0) { const v = Math.round(l * 255); return [v, v, v]; }
+      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      const p = 2 * l - q;
+      const hue2rgb = (p, q, t) => {
+        if (t < 0) t += 1; if (t > 1) t -= 1;
+        if (t < 1/6) return p + (q - p) * 6 * t;
+        if (t < 1/2) return q;
+        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+        return p;
+      };
+      return [
+        Math.round(hue2rgb(p, q, h + 1/3) * 255),
+        Math.round(hue2rgb(p, q, h)       * 255),
+        Math.round(hue2rgb(p, q, h - 1/3) * 255),
+      ];
+    }
+
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false,
+        });
+        video.srcObject = stream;
+        await video.play();
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('camera-view').classList.add('active');
+        document.getElementById('watermark').style.bottom = '200px';
+        running = true;
+        loop();
+      } catch (e) {
+        alert('Camera access denied. Please allow permissions and reload.');
+      }
+    }
+
+    function loop() {
+      if (!running) return;
+
+      const w = video.videoWidth  || 360;
+      const h = video.videoHeight || 640;
+      if (mainCanvas.width  !== w) mainCanvas.width  = w;
+      if (mainCanvas.height !== h) mainCanvas.height = h;
+
+      ctx.drawImage(video, 0, 0, w, h);
+
+      if (showInvert) {
+        const imageData = ctx.getImageData(0, 0, w, h);
+        const data = imageData.data;
+        const thr = threshold * 2.55;
+
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i], g = data[i + 1], b = data[i + 2];
+          if ((r + g + b) / 3 < thr) continue;
+
+          let ir = applyContrast(255 - r, contrast);
+          let ig = applyContrast(255 - g, contrast);
+          let ib = applyContrast(255 - b, contrast);
+
+          if (saturation !== 1) {
+            const [h2, s2, l2] = rgbToHsl(ir, ig, ib);
+            [ir, ig, ib] = hslToRgb(h2, Math.min(1, s2 * saturation), l2);
+          }
+
+          data[i]     = Math.round(r + (ir - r) * intensity);
+          data[i + 1] = Math.round(g + (ig - g) * intensity);
+          data[i + 2] = Math.round(b + (ib - b) * intensity);
+        }
+
+        ctx.putImageData(imageData, 0, 0);
+      }
+
+      requestAnimationFrame(loop);
+    }
+  </script>
+</body>
 </html>

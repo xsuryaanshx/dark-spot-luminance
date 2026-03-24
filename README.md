@@ -1,37 +1,48 @@
-# ✦ Dark Spot Luminance
+# ✦ Yuvi Stark — Cambia Visione
 
-Real-time camera effect that inverts your scene into a vivid photographic negative — with deep contrast and rich colour.
-
----
-
-## What it does
-
-Points your rear camera at anything and applies a true pixel-level negative effect in real time. Dark areas become bright, colours flip to their complements, and the result is punchy and saturated — not the washed-out CSS invert you see elsewhere.
+A bespoke real-time camera experience built exclusively for **Yuvi Stark**, a renowned contemporary artist known for his bold visual language and boundary-pushing creative work.
 
 ---
 
-## Controls
+## About Yuvi Stark
 
-| Control | Default | Description |
-|---|---|---|
-| ⚡ Invert | On | Toggle the full negative effect on/off |
-| Intensity | 100% | How strongly the invert blends over the original |
-| Threshold | 0 | Minimum brightness to invert (0 = invert every pixel) |
-| Contrast | 200% | Pulls inverted values away from midtone grey for extra punch |
-| Saturation | 180% | Boosts colour richness in the negative |
+Yuvi Stark is a celebrated artist whose practice spans painting, photography, and digital media. His work explores the tension between light and shadow, the familiar and the unseen — transforming ordinary moments into visceral visual experiences. This app is an extension of that artistic vision: a tool that lets viewers see the world the way Yuvi sees it.
+
+*EphiphyllumPrize x Yuvi Stark*
 
 ---
 
-## How the invert works
+## About the App
 
-Unlike a basic CSS `filter: invert()`, this does per-pixel processing on the canvas:
+**Cambia Visione** ("Change Vision" in Italian) is a real-time photographic negative camera effect, purpose-built as a creative instrument for Yuvi Stark and his audience.
 
-1. **Invert** — each RGB channel is flipped (`255 - value`)
-2. **Contrast** — values are pulled away from 50% grey using a parametric curve
-3. **Saturation** — colour is boosted in HSL space before writing back
-4. **Intensity** — final result is blended with the original frame at the chosen strength
+Point your camera at anything — a painting, a face, a room — and the app inverts reality. Dark becomes light, colours flip to their complements, and the world reveals a hidden layer that exists just beneath the surface.
 
-This gives a result that looks like a true photographic negative rather than a faded overlay.
+The effect is not a simple CSS filter. It processes every pixel individually:
+
+1. **Full inversion** — each RGB channel is flipped to its photographic negative
+2. **Contrast at 200%** — values are pulled hard away from midtone grey, eliminating the washed-out look of standard invert filters
+3. **Saturation at 180%** — colours are amplified in HSL space, making the negative rich and vivid rather than muted
+4. **Zero threshold** — every pixel in the frame is transformed, with no areas left untouched
+
+The result is the kind of negative that feels alive — the way a darkroom print looks when you first pull it from the developer.
+
+---
+
+## Features
+
+- Real-time rear camera processing at up to 1280×720
+- True pixel-level negative with contrast and saturation control
+- **Cambia Visione** toggle to switch between normal and inverted view
+- Direct link to Yuvi Stark's Instagram
+- No dependencies, no framework — single HTML file, runs entirely in the browser
+- Works on iOS and Android via any modern mobile browser
+
+---
+
+## Follow Yuvi Stark
+
+Instagram: [@yuvistark](https://www.instagram.com/yuvistark)
 
 ---
 
@@ -39,27 +50,21 @@ This gives a result that looks like a true photographic negative rather than a f
 
 - Vanilla JS + HTML5 Canvas (`getImageData` / `putImageData`)
 - `getUserMedia` rear camera stream
-- No dependencies, no framework — single HTML file
-- Hosted on GitHub Pages
-
----
-
-## Usage
-
-Open [suryaanshx.github.io](https://suryaanshx.github.io) on mobile, tap **Start Camera**, allow camera access, and hit **⚡ Invert**.
-
-Works best on mobile with the rear camera. Sliders update the effect in real time.
+- Hosted on GitHub Pages — zero backend, zero build step
 
 ---
 
 ## Files
 
 ```
-standalone.html   ← the full app (single file)
-index.html        ← entry point / redirect
-src/              ← source assets
+index.html          ← the full app (single self-contained file)
+standalone.html     ← standalone reference copy
+.github/workflows/  ← GitHub Pages deployment
+src/                ← legacy React source (no longer used)
 ```
 
 ---
 
-MIT License · Made by Suryansh Sharma
+*Built with care for an artist who sees the world differently.*
+
+MIT License · Developed for Yuvi Stark
